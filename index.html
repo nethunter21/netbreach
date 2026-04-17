@@ -2,175 +2,104 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NETBREACH GEN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Net UI Panel</title>
 
 <style>
 body {
     margin: 0;
-    background: linear-gradient(135deg, #000, #111);
-    color: red;
-    font-family: Arial;
-    overflow-x: hidden;
-}
-
-h1 {
-    text-align: center;
-    margin-top: 20px;
-    letter-spacing: 3px;
-    font-weight: 700;
-}
-
-.container {
-    text-align: center;
-}
-
-button {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: #050505;
+    font-family: Arial, sans-serif;
     color: white;
-    padding: 10px 18px;
-    margin: 6px;
-    cursor: pointer;
-    border-radius: 8px;
-    backdrop-filter: blur(10px);
-    transition: 0.2s;
 }
 
-button:hover {
-    transform: scale(1.05);
-    background: white;
-    color: black;
-}
-
-.output {
-    width: 85%;
-    margin: 20px auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-}
-
-.user {
-    padding: 10px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(8px);
-    cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.user:hover {
-    transform: scale(1.08);
-    background: white;
-    color: black;
-}
-
-.rare {
-    border: 1px solid #00ffc8;
-    box-shadow: 0 0 10px #00ffc8;
-}
-
-.toolbar {
-    text-align: center;
-    margin-top: 10px;
-}
-
-.preview {
-    width: 90%;
+/* main container like netbreach */
+.panel {
+    max-width: 900px;
     margin: auto;
-    margin-top: 20px;
+    padding: 20px;
 }
 
-iframe {
-    width: 100%;
-    height: 300px;
-    border: none;
-    margin-top: 10px;
-    border-radius: 10px;
+/* header */
+.title {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    color: #00ffcc;
+    text-shadow: 0 0 10px #00ffcc;
+}
+
+/* account cards */
+.card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(0,255,204,0.2);
+    padding: 18px;
+    margin: 12px 0;
+    border-radius: 12px;
+    cursor: pointer;
+
+    font-size: 18px;
+
+    /* iOS fix: makes taps more reliable */
+    touch-action: manipulation;
+
+    transition: 0.2s ease;
+}
+
+/* hover (PC) */
+.card:hover {
+    box-shadow: 0 0 12px #00ffcc;
+    transform: scale(1.02);
+}
+
+/* tap feedback (iOS) */
+.card:active {
+    transform: scale(0.98);
 }
 </style>
 </head>
 
 <body>
-<h1>NETBREACH GEN</h1>
 
-<div class="container">
-    <button onclick="setMode('4C')">4C</button>
-    <button onclick="setMode('4L')">4L</button>
-    <button onclick="generate()">Generate 100</button>
-    <button onclick="copyAll()">Copy</button>
-    <button onclick="openAll()">Open All</button>
+<div class="panel">
+    <div class="title">ACCOUNTS</div>
+
+    <div class="card" data-url="https://google.com">Google Account</div>
+    <div class="card" data-url="https://github.com">GitHub Account</div>
+    <div class="card" data-url="https://instagram.com">Instagram Account</div>
+    <div class="card" data-url="https://twitter.com">Twitter Account</div>
 </div>
 
-<div class="output" id="output"></div>
-
-<div class="preview" id="preview"></div>
-
 <script>
-let mode = "4C";
-let usernames = [];
+/*
+FIXED OPEN SYSTEM:
+- works on iOS Safari (no missed taps)
+- prevents double triggers
+- adds small delay queue (not instant spam)
+*/
 
-function setMode(m) {
-    mode = m;
-}
+let lock = false;
 
-function rand(chars) {
-    return chars[Math.floor(Math.random() * chars.length)];
-}
+document.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => {
 
-function isRare(u) {
-    if ([...new Set(u)].length === 1) return true;
-    if (u.slice(0,2) === u.slice(2)) return true;
-    if (u === u.split("").reverse().join("")) return true;
-    if (/(\w)\1\1/.test(u)) return true;
-    return false;
-}
+        if (lock) return; // prevents double open
+        lock = true;
 
-function generate() {
-    usernames = [];
-    let chars = mode === "4L"
-        ? "abcdefghijklmnopqrstuvwxyz"
-        : "abcdefghijklmnopqrstuvwxyz0123456789";
+        const url = card.dataset.url;
 
-    let container = document.getElementById("output");
-    container.innerHTML = "";
+        // small realistic delay (feels smoother, avoids instant jump)
+        setTimeout(() => {
+            window.location.href = url;
 
-    for (let i = 0; i < 100; i++) {
-        let u = "";
-        for (let j = 0; j < 4; j++) u += rand(chars);
-
-        usernames.push(u);
-
-        let div = document.createElement("div");
-        div.className = "user";
-        div.innerText = u;
-
-        if (isRare(u)) {
-            div.classList.add("rare");
-        }
-
-        div.onclick = () => showPreview(u);
-
-        container.appendChild(div);
-    }
-}
-
-function copyAll() {
-    navigator.clipboard.writeText(usernames.join("\n"));
-    alert("Copied!");
-}
-
-function openAll() {
-    usernames.forEach(u => {
-        window.open("https://www.instagram.com/" + u);
+            // unlock after navigation attempt
+            setTimeout(() => {
+                lock = false;
+            }, 800);
+        }, 250);
     });
-}
-
-function showPreview(u) {
-    let p = document.getElementById("preview");
-    p.innerHTML = "<iframe src='https://www.instagram.com/" + u + "/'></iframe>";
-}
+});
 </script>
 
 </body>
