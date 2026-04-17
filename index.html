@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Unseen Passwords</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-main: #050509;
+      --bg-gradient-1: #050509;
+      --bg-gradient-2: #101020;
+      --accent-1: #6b73ff;
+      --accent-2: #00f5ff;
+      --accent-danger: #ff4b81;
+      --text-main: #f5f5ff;
+      --text-muted: #8a8aa5;
+      --glass-bg: rgba(12, 12, 25, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --transition-fast: 0.18s ease-out;
+      --transition-med: 0.28s ease-out;
+      --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top left, #141432 0, #050509 40%, #050509 100%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      /* important pour occuper tout l’écran, même en mobile */
+      min-height: 100vh;
+      /* on laisse défiler si besoin pour éviter les bandes forcées */
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    /* Subtle animated background blobs (vape-ish) */
+    .bg-blur {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: -2;
+    }
+
+    .bg-blob {
+      position: absolute;
+      filter: blur(80px);
+      opacity: 0.45;
+      mix-blend-mode: screen;
+      animation: floatBlob 18s ease-in-out infinite alternate;
+    }
+
+    .bg-blob:nth-child(1) {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, var(--accent-1), transparent 60%);
+      top: -120px;
+      left: -80px;
+    }
+
+    .bg-blob:nth-child(2) {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, var(--accent-2), transparent 60%);
+      bottom: -160px;
+      right: -40px;
+      animation-delay: 4s;
+    }
+
+    .bg-blob:nth-child(3) {
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, #ff4b81, transparent 60%);
+      top: 40%;
+      left: 55%;
+      animation-delay: 8s;
+    }
+
+    @keyframes floatBlob {
+      0%   { transform: translate3d(0, 0, 0) scale(1); }
+      100% { transform: translate3d(40px, -40px, 0) scale(1.05); }
+    }
+
+    /* Unseen watermark / logo */
+    .watermark {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(245, 245, 255, 0.14);
+      pointer-events: none;
+      user-select: none;
+      filter: drop-shadow(0 0 16px rgba(0, 0, 0, 0.8));
+    }
+
+    .watermark span {
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.02));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .watermark::after {
+      content: "";
+      display: block;
+      margin: 4px auto 0;
+      width: 72px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+      opacity: 0.4;
+    }
+
+    /* Main shell */
+    .shell {
+      width: 100%;
+      max-width: 840px;
+      position: relative;
+    }
+
+    .card {
+      position: relative;
+      padding: 26px 26px 22px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.94), rgba(5, 5, 9, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(26px);
+      -webkit-backdrop-filter: blur(26px);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: calc(var(--radius-lg) - 1px);
+      background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 55%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent-2);
+      box-shadow: 0 0 12px rgba(0, 245, 255, 0.85);
+      animation: pulseDot 1.4s ease-out infinite;
+    }
+
+    @keyframes pulseDot {
+      0%   { transform: scale(1); opacity: 0.9; }
+      70%  { transform: scale(1.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .rows {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding-top: 80px;
+        padding-bottom: 40px;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      .rows {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 22px 18px 20px;
+      }
+
+      .card-title {
+        font-size: 19px;
+      }
+    }
+
+    .panel {
+      padding: 16px 16px 14px;
+      border-radius: var(--radius-md);
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.04), rgba(8, 8, 20, 0.9));
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(
+        135deg,
+        rgba(107, 115, 255, 0.12),
+        transparent 40%,
+        rgba(0, 245, 255, 0.06),
+        transparent 80%
+      );
+      opacity: 0;
+      transition: opacity var(--transition-med);
+      pointer-events: none;
+    }
+
+    .panel:hover::before {
+      opacity: 1;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(245, 245, 255, 0.92);
+    }
+
+    .chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(5, 5, 12, 0.8);
+      color: rgba(245, 245, 255, 0.8);
+    }
+
+    .panel-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .output-shell {
+      position: relative;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(6, 6, 20, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-family: "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+        monospace;
+      font-size: 13px;
+      color: rgba(245, 245, 255, 0.88);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      overflow: hidden;
+    }
+
+    .output-shell[data-empty="true"] {
+      color: rgba(172, 172, 190, 0.7);
+    }
+
+    .output-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      letter-spacing: 0.08em;
+    }
+
+    .output-badge {
+      font-size: 11px;
+      color: rgba(137, 137, 175, 0.95);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-radius: 999px;
+      padding: 8px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast),
+        border-color var(--transition-fast), color var(--transition-fast);
+      background: rgba(10, 10, 26, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(245, 245, 255, 0.9);
+    }
+
+    button span.icon {
+      font-size: 13px;
+    }
+
+    button.primary {
+      background: radial-gradient(circle at top left, var(--accent-2), var(--accent-1));
+      border-color: transparent;
+      color: #050509;
+      box-shadow:
+        0 0 18px rgba(0, 245, 255, 0.4),
+        0 0 42px rgba(107, 115, 255, 0.45);
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 26px rgba(0, 245, 255, 0.58),
+        0 0 50px rgba(107, 115, 255, 0.6);
+    }
+
+    button.secondary {
+      background: rgba(10, 10, 22, 0.9);
+    }
+
+    button.secondary:hover {
+      background: rgba(14, 14, 32, 0.95);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(110%);
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(5, 5, 15, 0.96);
+      border: 1px solid rgba(0, 245, 255, 0.42);
+      color: rgba(232, 252, 255, 0.95);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 20;
+      box-shadow:
+        0 0 20px rgba(0, 245, 255, 0.75),
+        0 0 40px rgba(107, 115, 255, 0.75);
+      transition: opacity 0.28s ease-out, transform 0.28s ease-out;
+    }
+
+    .copy-toast--visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Generate all row */
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .footer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .footer-meta-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle, var(--accent-danger), rgba(255, 75, 129, 0));
+      box-shadow: 0 0 8px rgba(255, 75, 129, 0.7);
+    }
+
+    .footer-meta span.label {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 10px;
+      color: rgba(183, 183, 210, 0.9);
+    }
+
+    .footer-meta span.value {
+      color: rgba(216, 216, 240, 0.9);
+    }
+
+    .footer-note {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .footer-note a {
+      color: rgba(0, 245, 255, 0.9);
+      text-decoration: none;
+    }
+
+    .footer-note a:hover {
+      text-decoration: underline;
+    }
+
+    /* Neon underline bar */
+    .neon-bar {
+      position: relative;
+      margin-top: 10px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      overflow: hidden;
+      opacity: 0.7;
+    }
+
+    .neon-bar::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -40%;
+      width: 40%;
+      height: 6px;
+      background: linear-gradient(90deg, transparent, var(--accent-2), var(--accent-1), transparent);
+      filter: blur(4px);
+      animation: sweep 3.2s linear infinite;
+    }
+
+    @keyframes sweep {
+      0%   { left: -40%; }
+      100% { left: 100%; }
+    }
+
+    /* Micro keyframes for appearance */
+    .fade-in {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .output-shell.bump {
+      animation: bump 0.25s ease-out;
+    }
+
+    @keyframes bump {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blur">
+    <div class="bg-blob"></div>
+    <div class="bg-blob"></div>
+    <div class="bg-blob"></div>
+  </div>
+
+  <!-- Invisible / subtle UNSEEN display at top -->
+  <div class="watermark">
+    <span>Invisible</span>
+  </div>
+
+  <main class="shell fade-in" aria-label="Unseen password generator">
+    <section class="card" role="region">
+      <div class="card-inner">
+        <header class="card-header">
+          <div class="card-title">
+            <div class="pulse-dot" aria-hidden="true"></div>
+            <span>Instant Random Passwords</span>
+          </div>
+          <div class="card-subtitle">
+            embrace confidentiality. embrace privacy. embrace invisible.
+          </div>
+        </header>
+
+        <div class="rows">
+          <!-- 20-character strong password -->
+          <article class="panel" aria-label="20 character strong password">
+            <div class="panel-header">
+              <h2 class="panel-title">Strong password • 20 chars</h2>
+              <span class="chip">Maj · symbols · letters · numbers</span>
+            </div>
+
+            <div class="panel-body">
+              <div class="output-shell" id="strong-output" data-empty="true" aria-live="polite">
+                <div class="output-text" id="strong-text">Click generate to create a strong password.</div>
+                <div class="output-badge">20 characters</div>
+              </div>
+
+              <div class="controls">
+                <button class="secondary" type="button" id="strong-copy">
+                  <span class="icon">📋</span>
+                  <span>COPY</span>
+                </button>
+                <button class="primary" type="button" id="strong-generate">
+                  <span class="icon">⚡</span>
+                  <span>GENERATE</span>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- 4-character alphanumeric code -->
+          <article class="panel" aria-label="4 character alphanumeric code">
+            <div class="panel-header">
+              <h2 class="panel-title">Random 4-char code</h2>
+              <span class="chip">Fully random · alphanumeric only</span>
+            </div>
+
+            <div class="panel-body">
+              <div class="output-shell" id="short-output" data-empty="true" aria-live="polite">
+                <div class="output-text" id="short-text">Click generate for a 4-character code.</div>
+                <div class="output-badge">4 chars</div>
+              </div>
+
+              <div class="controls">
+                <button class="secondary" type="button" id="short-copy">
+                  <span class="icon">📋</span>
+                  <span>COPY</span>
+                </button>
+                <button class="primary" type="button" id="short-generate">
+                  <span class="icon">🎲</span>
+                  <span>GENERATE</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Generate all + footer -->
+        <div class="footer-row">
+          <div class="footer-meta">
+            <div class="footer-meta-dot"></div>
+            <span class="label">Instant</span>
+            <span class="value">Both generators refresh together.</span>
+          </div>
+
+          <button class="primary" type="button" id="generate-all">
+            <span class="icon">✨</span>
+            <span>GENERATE ALL</span>
+          </button>
+        </div>
+
+        <div class="neon-bar"></div>
+
+        <p class="footer-note">
+          by unseen.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Copy toast -->
+  <div class="copy-toast" id="copy-toast">
+    <span class="icon">✓</span>
+    <span>COPIED</span>
+  </div>
+
+  <script>
+    // Character sets
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*()-_=+[]{};:,.<>/?";
+
+    const alphaNum = upper + lower + numbers;
+
+    const strongOutput = document.getElementById("strong-output");
+    const strongText = document.getElementById("strong-text");
+    const shortOutput = document.getElementById("short-output");
+    const shortText = document.getElementById("short-text");
+
+    const strongGenerateBtn = document.getElementById("strong-generate");
+    const strongCopyBtn = document.getElementById("strong-copy");
+    const shortGenerateBtn = document.getElementById("short-generate");
+    const shortCopyBtn = document.getElementById("short-copy");
+    const generateAllBtn = document.getElementById("generate-all");
+
+    const copyToast = document.getElementById("copy-toast");
+    let copyToastTimeout;
+
+    function getRandomChar(str) {
+      const index = Math.floor(Math.random() * str.length);
+      return str.charAt(index);
+    }
+
+    // Generates a 20-character password including upper, lower, numbers, and symbols
+    function generateStrongPassword() {
+      const length = 20;
+      const allChars = upper + lower + numbers + symbols;
+
+      // Ensure at least one of each category
+      let passwordChars = [
+        getRandomChar(upper),
+        getRandomChar(lower),
+        getRandomChar(numbers),
+        getRandomChar(symbols),
+      ];
+
+      while (passwordChars.length < length) {
+        passwordChars.push(getRandomChar(allChars));
+      }
+
+      // Shuffle
+      for (let i = passwordChars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [passwordChars[i], passwordChars[j]] = [passwordChars[j], passwordChars[i]];
+      }
+
+      return passwordChars.join("");
+    }
+
+    // Generates a fully random 4-char alphanumeric code (letters and/or numbers, not forced)
+    function generateShortCode() {
+      const length = 16;
+      let code = "";
+      for (let i = 0; i < length; i++) {
+        code += getRandomChar(alphaNum);
+      }
+      return code;
+    }
+
+    function animateOutput(el) {
+      el.classList.remove("bump");
+      // Force reflow
+      void el.offsetWidth;
+      el.classList.add("bump");
+    }
+
+    function showCopyToast() {
+      if (copyToastTimeout) {
+        clearTimeout(copyToastTimeout);
+      }
+      copyToast.classList.add("copy-toast--visible");
+      copyToastTimeout = setTimeout(() => {
+        copyToast.classList.remove("copy-toast--visible");
+      }, 1600);
+    }
+
+    async function copyToClipboard(text) {
+      if (!text || !text.trim()) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showCopyToast();
+      } catch (err) {
+        console.error("Clipboard error:", err);
+      }
+    }
+
+    function updateStrong() {
+      const pwd = generateStrongPassword();
+      strongOutput.dataset.empty = "false";
+      strongText.textContent = pwd;
+      animateOutput(strongOutput);
+    }
+
+    function updateShort() {
+      const code = generateShortCode();
+      shortOutput.dataset.empty = "false";
+      shortText.textContent = code;
+      animateOutput(shortOutput);
+    }
+
+    // Event listeners
+    strongGenerateBtn.addEventListener("click", updateStrong);
+    shortGenerateBtn.addEventListener("click", updateShort);
+
+    generateAllBtn.addEventListener("click", () => {
+      updateStrong();
+      updateShort();
+    });
+
+    strongCopyBtn.addEventListener("click", () => {
+      copyToClipboard(strongText.textContent);
+    });
+
+    shortCopyBtn.addEventListener("click", () => {
+      copyToClipboard(shortText.textContent);
+    });
+
+    // Instant mode: generate on load
+    window.addEventListener("load", () => {
+      updateStrong();
+      updateShort();
+    });
+  </script>
+</body>
+</html>
